@@ -1,0 +1,119 @@
+/* @scoobynko/snake-loader */
+
+.snake-loader {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: var(--snake-loader-background);
+  padding: calc(var(--snake-loader-cell-size) * 0.5);
+  position: relative;
+  isolation: isolate;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.snake-loader__grid {
+  display: grid;
+  position: relative;
+  background-image:
+    linear-gradient(to right, var(--snake-loader-grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--snake-loader-grid) 1px, transparent 1px);
+  background-size: var(--snake-loader-cell-size) var(--snake-loader-cell-size);
+}
+
+.snake-loader--pixelated .snake-loader__grid,
+.snake-loader--pixelated .snake-loader__cell,
+.snake-loader--pixelated .snake-loader__food {
+  image-rendering: pixelated;
+}
+
+.snake-loader__cell {
+  background: var(--snake-loader-snake);
+  border-radius: var(--snake-loader-corner);
+  transition: opacity var(--snake-loader-trail-ms) ease-out;
+}
+
+.snake-loader__cell--head {
+  background: var(--snake-loader-snake-head);
+}
+
+.snake-loader__food {
+  background: var(--snake-loader-food);
+  border-radius: var(--snake-loader-corner);
+}
+
+/* Glow effect — stacked shadows layered inner-to-outer for a bloom look. */
+.snake-loader--glow .snake-loader__cell,
+.snake-loader--glow .snake-loader__food {
+  box-shadow:
+    0 0 calc(var(--snake-loader-glow-size) * 0.25) var(--snake-loader-glow),
+    0 0 calc(var(--snake-loader-glow-size) * 0.6) var(--snake-loader-glow),
+    0 0 var(--snake-loader-glow-size) var(--snake-loader-glow);
+}
+
+/* Food pulse */
+@keyframes snake-loader-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.85); opacity: 0.6; }
+}
+.snake-loader--pulse .snake-loader__food {
+  animation: snake-loader-pulse 1.2s ease-in-out infinite;
+}
+
+/* Scanlines overlay */
+.snake-loader--scanlines .snake-loader__grid::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.12) 0,
+    rgba(0, 0, 0, 0.12) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  mix-blend-mode: overlay;
+}
+
+/* Theme-specific micro-adjustments */
+.snake-loader--nokia {
+  color: #2b3a1f;
+}
+.snake-loader--nokia .snake-loader__grid {
+  outline: 2px solid rgba(43, 58, 31, 0.35);
+  outline-offset: calc(var(--snake-loader-cell-size) * 0.25);
+}
+
+.snake-loader--neon {
+  color: var(--snake-loader-snake);
+}
+
+.snake-loader--minimal {
+  padding: 0;
+}
+
+.snake-loader__meta {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: currentColor;
+  opacity: 0.8;
+}
+
+.snake-loader__score::before {
+  content: "SCORE ";
+  opacity: 0.6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snake-loader--pulse .snake-loader__food {
+    animation: none;
+  }
+  .snake-loader__cell {
+    transition: none;
+  }
+}

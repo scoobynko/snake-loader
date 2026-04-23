@@ -1,0 +1,55 @@
+{
+  "name": "@scoobynko/snake-loader",
+  "version": "0.1.0",
+  "description": "A Nokia 3310 Snake-style React loader. Indeterminate or progress-driven. Zero dependencies.",
+  "keywords": [
+    "react",
+    "loader",
+    "spinner",
+    "progress",
+    "snake",
+    "nokia",
+    "retro"
+  ],
+  "author": "Jakub Šalmík <som@jakubsalmik.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/scoobynko/snake-loader.git"
+  },
+  "homepage": "https://jakubsalmik.com/snake-loader",
+  "type": "module",
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs"
+    },
+    "./styles.css": "./dist/styles.css"
+  },
+  "sideEffects": [
+    "*.css"
+  ],
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "react": "^18 || ^19"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "react": "^19.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0"
+  }
+}
