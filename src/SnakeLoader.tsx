@@ -1,4 +1,4 @@
-import { useMemo, type CSSProperties } from "react";
+import type { CSSProperties } from "react";
 import { GRID_SIZE, useSnakeGame } from "./useSnakeGame";
 import {
   resolveTheme,
@@ -19,6 +19,9 @@ export interface SnakeLoaderProps {
   "aria-label"?: string;
 }
 
+const MIN_CELL_SIZE = 1;
+const MIN_SPEED = 1;
+
 export function SnakeLoader(props: SnakeLoaderProps) {
   const {
     theme = "nokia",
@@ -32,15 +35,14 @@ export function SnakeLoader(props: SnakeLoaderProps) {
     "aria-label": ariaLabel = "Loading",
   } = props;
 
-  const resolved = useMemo(
-    () => resolveTheme(theme, colors, effects),
-    [theme, colors, effects],
-  );
+  const safeCellSize = Math.max(MIN_CELL_SIZE, cellSize);
+  const safeSpeed = Math.max(MIN_SPEED, speed);
 
-  const game = useSnakeGame({ speed, paused });
+  const resolved = resolveTheme(theme, colors, effects);
+  const game = useSnakeGame({ speed: safeSpeed, paused });
 
-  const cssVars = {
-    "--snake-loader-cell-size": `${cellSize}px`,
+  const cssVars: CSSProperties = {
+    "--snake-loader-cell-size": `${safeCellSize}px`,
     "--snake-loader-snake": resolved.colors.snake,
     "--snake-loader-food": resolved.colors.food,
     "--snake-loader-grid": resolved.colors.grid,
@@ -51,13 +53,15 @@ export function SnakeLoader(props: SnakeLoaderProps) {
   const classes = [
     "snake-loader",
     `snake-loader--${theme}`,
-    resolved.effects.pulse ? "snake-loader--pulse" : "",
-    resolved.effects.glow ? "snake-loader--glow" : "",
-    game.status === "dying" ? "snake-loader--dying" : "",
-    className ?? "",
+    resolved.effects.pulse && "snake-loader--pulse",
+    resolved.effects.glow && "snake-loader--glow",
+    game.status === "dying" && "snake-loader--dying",
+    className,
   ]
     .filter(Boolean)
     .join(" ");
+
+  const gridPx = GRID_SIZE * safeCellSize;
 
   return (
     <div
@@ -70,10 +74,10 @@ export function SnakeLoader(props: SnakeLoaderProps) {
       <div
         className="snake-loader__grid"
         style={{
-          width: GRID_SIZE * cellSize,
-          height: GRID_SIZE * cellSize,
-          gridTemplateColumns: `repeat(${GRID_SIZE}, ${cellSize}px)`,
-          gridTemplateRows: `repeat(${GRID_SIZE}, ${cellSize}px)`,
+          width: gridPx,
+          height: gridPx,
+          gridTemplateColumns: `repeat(${GRID_SIZE}, ${safeCellSize}px)`,
+          gridTemplateRows: `repeat(${GRID_SIZE}, ${safeCellSize}px)`,
         }}
       >
         <div
@@ -82,7 +86,7 @@ export function SnakeLoader(props: SnakeLoaderProps) {
         />
         {game.snake.map((cell, i) => (
           <div
-            key={`${cell.x},${cell.y},${i}`}
+            key={i}
             className="snake-loader__cell"
             style={{ gridColumn: cell.x + 1, gridRow: cell.y + 1 }}
           />

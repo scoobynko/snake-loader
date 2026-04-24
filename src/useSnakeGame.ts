@@ -1,9 +1,11 @@
-import { useEffect, useReducer, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { nextDirection, step, type Cell, type Direction } from "./pathing";
 
 export const GRID_SIZE = 8;
 const INITIAL_LENGTH = 2;
 const DYING_TICKS = 12;
+const MIN_INTERVAL_MS = 40;
+const REDUCED_MOTION_FACTOR = 0.5;
 
 export type Status = "alive" | "dying";
 
@@ -19,8 +21,6 @@ export interface GameOptions {
   speed: number;
   paused: boolean;
 }
-
-type Action = { type: "tick" };
 
 function randomEmptyCell(snake: Cell[]): Cell {
   const occupied = new Set(snake.map((c) => `${c.x},${c.y}`));
@@ -41,76 +41,86 @@ function initialState(): GameState {
   for (let i = 0; i < INITIAL_LENGTH; i++) {
     snake.unshift({ x: startX + i, y: startY });
   }
-  const food = randomEmptyCell(snake);
-  return { snake, food, direction: "right", status: "alive", dyingTicks: 0 };
+  return {
+    snake,
+    food: randomEmptyCell(snake),
+    direction: "right",
+    status: "alive",
+    dyingTicks: 0,
+  };
 }
 
-function reducer(state: GameState, action: Action): GameState {
-  switch (action.type) {
-    case "tick": {
-      if (state.status === "dying") {
-        const next = state.dyingTicks + 1;
-        return next >= DYING_TICKS
-          ? initialState()
-          : { ...state, dyingTicks: next };
-      }
-
-      const { snake, food, direction } = state;
-      const nextDir = nextDirection(snake, food, direction, GRID_SIZE, GRID_SIZE);
-      const newHead = step(snake[0], nextDir);
-
-      const outOfBounds =
-        newHead.x < 0 ||
-        newHead.x >= GRID_SIZE ||
-        newHead.y < 0 ||
-        newHead.y >= GRID_SIZE;
-      const hitSelf = snake
-        .slice(0, -1)
-        .some((c) => c.x === newHead.x && c.y === newHead.y);
-
-      if (outOfBounds || hitSelf) {
-        return { ...state, status: "dying", dyingTicks: 0 };
-      }
-
-      const ate = newHead.x === food.x && newHead.y === food.y;
-      const newSnake = ate
-        ? [newHead, ...snake]
-        : [newHead, ...snake.slice(0, -1)];
-      const newFood = ate ? randomEmptyCell(newSnake) : food;
-
-      return { ...state, snake: newSnake, food: newFood, direction: nextDir };
-    }
-    default:
-      return state;
+function tick(state: GameState): GameState {
+  if (state.status === "dying") {
+    const next = state.dyingTicks + 1;
+    return next >= DYING_TICKS
+      ? initialState()
+      : { ...state, dyingTicks: next };
   }
+
+  const { snake, food, direction } = state;
+  const nextDir = nextDirection(snake, food, direction, GRID_SIZE, GRID_SIZE);
+  const head = step(snake[0], nextDir);
+
+  const outOfBounds =
+    head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE;
+  const hitSelf = snake
+    .slice(0, -1)
+    .some((c) => c.x === head.x && c.y === head.y);
+
+  if (outOfBounds || hitSelf) {
+    return { ...state, status: "dying", dyingTicks: 0 };
+  }
+
+  const ate = head.x === food.x && head.y === food.y;
+  const newSnake = ate ? [head, ...snake] : [head, ...snake.slice(0, -1)];
+  const newFood = ate ? randomEmptyCell(newSnake) : food;
+
+  return { ...state, snake: newSnake, food: newFood, direction: nextDir };
 }
 
-export function useSnakeGame(opts: GameOptions): GameState {
-  const { speed, paused } = opts;
-  const [state, dispatch] = useReducer(reducer, null, initialState);
-  const rafRef = useRef<number | null>(null);
-  const lastTickRef = useRef<number>(0);
+function computeInterval(speed: number, reducedMotion: boolean): number {
+  const effective = reducedMotion ? speed * REDUCED_MOTION_FACTOR : speed;
+  return Math.max(MIN_INTERVAL_MS, 1000 / Math.max(1, effective));
+}
+
+export function useSnakeGame({ speed, paused }: GameOptions): GameState {
+  const [state, setState] = useState<GameState>(initialState);
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
   useEffect(() => {
     if (paused) return;
 
-    const reduced =
-      typeof window !== "undefined" &&
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    const effectiveSpeed = reduced ? speed * 0.5 : speed;
-    const interval = Math.max(40, 1000 / Math.max(1, effectiveSpeed));
+    const mql =
+      typeof window !== "undefined" && typeof window.matchMedia === "function"
+        ? window.matchMedia("(prefers-reduced-motion: reduce)")
+        : null;
+
+    let interval = computeInterval(speed, mql?.matches ?? false);
+    const onMotionChange = () => {
+      interval = computeInterval(speed, mql?.matches ?? false);
+    };
+    mql?.addEventListener("change", onMotionChange);
+
+    let rafId = 0;
+    let lastTick = 0;
 
     const loop = (t: number) => {
-      if (t - lastTickRef.current >= interval) {
-        lastTickRef.current = t;
-        dispatch({ type: "tick" });
+      if (lastTick === 0) lastTick = t;
+      if (t - lastTick >= interval) {
+        lastTick = t;
+        const next = tick(stateRef.current);
+        stateRef.current = next;
+        setState(next);
       }
-      rafRef.current = requestAnimationFrame(loop);
+      rafId = requestAnimationFrame(loop);
     };
-    rafRef.current = requestAnimationFrame(loop);
+    rafId = requestAnimationFrame(loop);
 
     return () => {
-      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      cancelAnimationFrame(rafId);
+      mql?.removeEventListener("change", onMotionChange);
     };
   }, [speed, paused]);
 
