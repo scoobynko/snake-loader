@@ -1,12 +1,11 @@
 {
   "name": "@scoobynko/snake-loader",
-  "version": "0.1.0",
-  "description": "A Nokia 3310 Snake-style React loader. Indeterminate or progress-driven. Zero dependencies.",
+  "version": "0.1.1",
+  "description": "A tiny React loader that plays Snake on an 8×8 grid. Inline-sized, zero dependencies.",
   "keywords": [
     "react",
     "loader",
     "spinner",
-    "progress",
     "snake",
     "nokia",
     "retro"
@@ -15,7 +14,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/scoobynko/snake-loader.git"
+    "url": "git+https://github.com/scoobynko/snake-loader.git"
   },
   "homepage": "https://jakubsalmik.com/snake-loader",
   "type": "module",
