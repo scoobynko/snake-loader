@@ -1,7 +1,8 @@
-// Greedy pathing for the snake: prefer a direction that moves closer to
-// the food, but never into the snake's own body. If no safe step moves
-// toward the food, pick any safe direction. If no safe step exists at
-// all, keep going straight (the game will end / reset).
+// Weighted-random pathing. Each tick, among safe directions: 60% of the
+// time keep going straight (longer runs read as intentional motion);
+// otherwise 70% pick the step closest to the food, 30% pick uniformly
+// at random. Simulates a casual player — drifts, occasionally traps
+// itself, and resets.
 
 export type Cell = { x: number; y: number };
 export type Direction = "up" | "down" | "left" | "right";
@@ -22,6 +23,9 @@ const OPPOSITE: Record<Direction, Direction> = {
 
 const ALL_DIRS: Direction[] = ["up", "right", "down", "left"];
 
+const STRAIGHT_PROBABILITY = 0.6;
+const FOOD_BIAS_PROBABILITY = 0.7;
+
 function manhattan(a: Cell, b: Cell): number {
   return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 }
@@ -31,7 +35,7 @@ function inBounds(c: Cell, cols: number, rows: number): boolean {
 }
 
 function isOccupied(c: Cell, snake: Cell[]): boolean {
-  // The tail will move out of the way on the next tick, so allow it.
+  // Tail moves out next tick, so allow it.
   for (let i = 0; i < snake.length - 1; i++) {
     if (snake[i].x === c.x && snake[i].y === c.y) return true;
   }
@@ -47,25 +51,31 @@ export function nextDirection(
 ): Direction {
   const head = snake[0];
 
-  const candidates = ALL_DIRS.filter((d) => d !== OPPOSITE[current]);
+  const safe: { d: Direction; distance: number }[] = [];
+  for (const d of ALL_DIRS) {
+    if (d === OPPOSITE[current]) continue;
+    const v = DIRS[d];
+    const next: Cell = { x: head.x + v.x, y: head.y + v.y };
+    if (!inBounds(next, cols, rows)) continue;
+    if (isOccupied(next, snake)) continue;
+    safe.push({ d, distance: manhattan(next, food) });
+  }
 
-  const scored = candidates
-    .map((d) => {
-      const step = DIRS[d];
-      const next: Cell = { x: head.x + step.x, y: head.y + step.y };
-      const safe = inBounds(next, cols, rows) && !isOccupied(next, snake);
-      const distance = manhattan(next, food);
-      return { d, safe, distance };
-    })
-    .sort((a, b) => {
-      // Safe first, then by distance to food ascending.
-      if (a.safe !== b.safe) return a.safe ? -1 : 1;
-      return a.distance - b.distance;
-    });
+  // No safe moves — keep current. The game loop will detect the collision.
+  if (safe.length === 0) return current;
 
-  if (scored[0]?.safe) return scored[0].d;
-  // No safe moves — keep current direction, the game loop will handle reset.
-  return current;
+  const straight = safe.find((s) => s.d === current);
+  if (straight && Math.random() < STRAIGHT_PROBABILITY) return straight.d;
+
+  if (Math.random() < FOOD_BIAS_PROBABILITY) {
+    let best = safe[0];
+    for (let i = 1; i < safe.length; i++) {
+      if (safe[i].distance < best.distance) best = safe[i];
+    }
+    return best.d;
+  }
+
+  return safe[Math.floor(Math.random() * safe.length)].d;
 }
 
 export function step(cell: Cell, d: Direction): Cell {

@@ -1,8 +1,6 @@
 # @scoobynko/snake-loader
 
-A React loader in the style of the Nokia 3310 Snake game. Indeterminate or progress-driven. Zero runtime dependencies. ~4kb gzipped.
-
-![npm](https://img.shields.io/npm/v/@scoobynko/snake-loader) ![license](https://img.shields.io/npm/l/@scoobynko/snake-loader)
+A tiny React loader that plays Snake on an 8×8 grid. Meant to sit inline inside buttons, cards, or forms — 24×24px by default. The snake wanders, eats food, grows, and resets when it traps itself. Zero runtime dependencies. ~4kb gzipped. MIT.
 
 **Live demo:** https://jakubsalmik.com/snake-loader
 
@@ -18,53 +16,46 @@ npm install @scoobynko/snake-loader
 import { SnakeLoader } from "@scoobynko/snake-loader";
 import "@scoobynko/snake-loader/styles.css";
 
-// Indeterminate — snake roams forever
-<SnakeLoader />
-
-// Progress-driven — snake length grows with progress
-<SnakeLoader progress={0.6} />
-
-// Neon preset
-<SnakeLoader theme="neon" />
-
-// Full custom
+<SnakeLoader />                          // 24×24px, nokia theme
+<SnakeLoader theme="neon" />             // glow + scanlines
+<SnakeLoader cellSize={6} />             // 48×48px
 <SnakeLoader
   theme="custom"
-  cols={24}
-  rows={12}
-  speed={10}
-  cellSize={14}
+  cellSize={4}
   colors={{ snake: "#00ff88", food: "#ff3366", background: "#000" }}
-  effects={{ glow: 16, trail: 200, scanlines: true }}
+  effects={{ glow: true, pulse: true }}
 />
 ```
 
 ## Props
 
-| Prop             | Type                                                     | Default   | Description                                           |
-| ---------------- | -------------------------------------------------------- | --------- | ----------------------------------------------------- |
-| `progress`       | `number`                                                 | `—`       | 0..1. Omit for indeterminate.                         |
-| `theme`          | `"nokia" \| "neon" \| "minimal" \| "custom"`             | `"nokia"` | Preset. `custom` = no baked styling.                  |
-| `cols`           | `number`                                                 | `20`      | Grid columns.                                         |
-| `rows`           | `number`                                                 | `10`      | Grid rows.                                            |
-| `cellSize`       | `number`                                                 | `12`      | Cell size in px.                                      |
-| `speed`          | `number`                                                 | `8`       | Cells per second.                                     |
-| `initialLength`  | `number`                                                 | `3`       | Starting snake length.                                |
-| `growthPerFood`  | `number`                                                 | `1`       | Cells gained per food.                                |
-| `colors`         | `{ snake?, snakeHead?, food?, grid?, background?, glow?, trailColor? }` | `—` | Color tokens. Override preset.            |
-| `effects`        | `{ glow?, trail?, scanlines?, pixelated?, pulse?, cornerRadius? }` | `—` | Effect tokens. Override preset.            |
-| `showScore`      | `boolean`                                                | `false`   | Show score.                                           |
-| `label`          | `string`                                                 | `—`       | Text under grid + aria-label.                         |
-| `frame`          | `{ show?, color?, borderRadius?, padding? }`             | `—`       | Optional bezel chrome.                                |
-| `paused`         | `boolean`                                                | `false`   | Pause the tick loop.                                  |
-| `className`      | `string`                                                 | `—`       | Pass-through.                                         |
+| Prop        | Type                                                          | Default   | Description                              |
+| ----------- | ------------------------------------------------------------- | --------- | ---------------------------------------- |
+| `theme`     | `"nokia" \| "neon" \| "minimal" \| "custom"`                  | `"nokia"` | Visual preset.                           |
+| `cellSize`  | `number`                                                      | `3`       | Px per cell. Grid is fixed 8×8.          |
+| `speed`     | `number`                                                      | `10`      | Cells per second.                        |
+| `colors`    | `{ snake?, food?, grid?, background?, glow? }`                | `—`       | Override color tokens.                   |
+| `effects`   | `{ glow?: boolean, pulse?: boolean }`                         | `—`       | Toggle visual effects.                   |
+| `paused`    | `boolean`                                                     | `false`   | Pause the tick loop.                     |
+| `className` | `string`                                                      | `—`       | Pass-through class.                      |
+| `style`     | `CSSProperties`                                               | `—`       | Pass-through style.                      |
+| `aria-label`| `string`                                                      | `Loading` | A11y label.                              |
 
-All visual tokens are also exposed as CSS variables (`--snake-loader-snake`, `--snake-loader-glow`, etc.) so you can theme via stylesheet.
+All tokens are also exposed as CSS variables (`--snake-loader-snake`, `--snake-loader-glow`, `--snake-loader-trail-ms`, etc.) so you can theme via stylesheet.
+
+## How it plays
+
+- Fixed 8×8 grid.
+- Snake starts length 2 and moves 10 cells/sec (configurable).
+- Motion is weighted-random: 70% uniform random among safe directions, 30% biased toward food. Simulates a casual human player — wanders, drifts toward food, occasionally traps itself.
+- On food contact: snake grows +1.
+- On self-collision or wall collision: resets to initial state.
+- No progress mode, no score, no game over — runs forever until unmounted or `paused`.
 
 ## Accessibility
 
-- `role="progressbar"` with `aria-valuenow` when `progress` is provided; `aria-busy="true"` when indeterminate.
-- Respects `prefers-reduced-motion` — slower tick, no pulse/trail/flicker.
+- `role="progressbar"` with `aria-busy="true"` and an `aria-label` (defaults to "Loading").
+- Respects `prefers-reduced-motion` — halves tick speed, disables pulse/trail.
 
 ## License
 
