@@ -4,6 +4,8 @@ A tiny React loader that plays Snake on an 8×8 grid. Meant to sit inline inside
 
 **Live demo:** https://jakubsalmik.com/snake-loader
 
+![Snake Loader demo](./docs/demo.gif)
+
 ## Install
 
 ```bash
