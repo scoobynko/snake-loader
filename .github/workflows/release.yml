@@ -36,6 +36,14 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Debug npm auth
+        run: |
+          echo "registry: $(npm config get registry)"
+          echo "whoami:"
+          npm whoami || echo "whoami failed — token invalid or not read"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Create release PR or publish
         uses: changesets/action@v1
         with:
