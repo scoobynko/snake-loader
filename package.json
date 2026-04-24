@@ -1,6 +1,6 @@
 {
   "name": "@scoobynko/snake-loader",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A tiny React loader that plays Snake on an 8×8 grid. Inline-sized, zero dependencies.",
   "keywords": [
     "react",
