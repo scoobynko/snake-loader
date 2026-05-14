@@ -59,6 +59,29 @@ All tokens are also exposed as CSS variables (`--snake-loader-snake`, `--snake-l
 - `role="progressbar"` with `aria-busy="true"` and an `aria-label` (defaults to "Loading").
 - Respects `prefers-reduced-motion` — halves tick speed, disables pulse/trail.
 
+## Contributing
+
+PRs welcome.
+
+1. Branch off `main` — `fix/...`, `feat/...`, `chore/...`, or `docs/...`. `main` is protected.
+2. Before pushing, run `npm run typecheck` and `npm run build`. Both must pass.
+3. If your change touches `src/`, add a changeset:
+   ```bash
+   npx changeset
+   ```
+   Pick `patch` (bug fix), `minor` (additive feature), or `major` (breaking change), and write a one-line summary from the consumer's perspective. CI fails without one.
+4. Open a PR with `gh pr create`.
+
+### Release automation
+
+You don't run `npm publish`, `npm version`, or tag releases by hand.
+
+- Merging a PR to `main` runs the [Release workflow](.github/workflows/release.yml).
+- If pending changesets exist, it opens (or updates) a "version packages" PR that bumps `package.json` and updates `CHANGELOG.md`.
+- Merging that PR publishes to npm and tags the release.
+
+Don't commit `dist/` or `node_modules/`, don't edit changeset files in the version PR, and don't add runtime dependencies — this package is zero-deps.
+
 ## License
 
 MIT © [Jakub Šalmík](https://jakubsalmik.com)

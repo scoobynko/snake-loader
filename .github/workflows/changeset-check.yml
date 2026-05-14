@@ -1,0 +1,50 @@
+name: Changeset check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  changeset:
+    name: Require changeset for src/ changes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for changeset
+        run: |
+          BASE="origin/${{ github.base_ref }}"
+          git fetch origin "${{ github.base_ref }}" --depth=1
+
+          SRC_CHANGED=$(git diff --name-only "$BASE"...HEAD -- 'src/**' || true)
+          NEW_CHANGESETS=$(git diff --name-only --diff-filter=A "$BASE"...HEAD -- '.changeset/*.md' \
+            | grep -v '^.changeset/README.md$' || true)
+
+          if [ -z "$SRC_CHANGED" ]; then
+            echo "No changes under src/ — changeset not required."
+            exit 0
+          fi
+
+          echo "Files changed under src/:"
+          echo "$SRC_CHANGED"
+          echo ""
+
+          if [ -z "$NEW_CHANGESETS" ]; then
+            echo "::error::This PR changes files under src/ but does not include a changeset."
+            echo ""
+            echo "Run 'npx changeset' locally, pick a bump type (patch/minor/major),"
+            echo "write a one-line summary from the consumer's perspective, then commit"
+            echo "the generated .changeset/*.md file."
+            echo ""
+            echo "If this change truly has no user-facing effect (e.g. an internal-only"
+            echo "refactor mistakenly placed under src/), explain in the PR description"
+            echo "and a maintainer can override this check."
+            exit 1
+          fi
+
+          echo "Found changeset(s):"
+          echo "$NEW_CHANGESETS"
